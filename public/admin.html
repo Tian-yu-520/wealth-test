@@ -34,7 +34,7 @@
 
     <div class="card">
       <div class="row">
-        <input id="adminPwd" type="password" placeholder="管理员密码（默认 admin888）" autocomplete="off" />
+        <input id="adminPwd" type="password" placeholder="管理员密码" autocomplete="off" />
         <button id="loginBtn">进入</button>
       </div>
       <p class="msg" id="loginMsg"></p>
@@ -47,6 +47,9 @@
         <button id="addBtn">添加</button>
       </div>
       <p class="msg" id="opMsg"></p>
+      <div class="row" style="margin-bottom:10px; display:none" id="syncRow">
+        <button id="syncBtn" class="ghost">🔄 同步到云端（待同步 0 条）</button>
+      </div>
       <table>
         <thead><tr><th>密码</th><th>剩余次数</th><th>操作</th></tr></thead>
         <tbody id="list"></tbody>
@@ -62,8 +65,23 @@
     const $ = s => document.querySelector(s);
     let admin = '';
     let isOffline = false;   // Supabase 不可达时为 true（离线兜底模式）
+    const LS_CACHE = 'wt_pwd_cache';    // 本地缓存的卡密列表（联机时与云端同步）
+    const LS_QUEUE = 'wt_pwd_pending';  // 离线期间的待同步操作队列
 
-    // 管理接口：优先走 Supabase（已配置），否则回退本地 server.js
+    // ---- 本地存储（localStorage）----
+    function cacheLoad() { try { return JSON.parse(localStorage.getItem(LS_CACHE) || '[]'); } catch (e) { return []; } }
+    function cacheSave(list) { try { localStorage.setItem(LS_CACHE, JSON.stringify(list || [])); } catch (e) {} }
+    function queueLoad() { try { return JSON.parse(localStorage.getItem(LS_QUEUE) || '[]'); } catch (e) { return []; } }
+    function queueSave(q) { try { localStorage.setItem(LS_QUEUE, JSON.stringify(q || [])); } catch (e) {} }
+    function queuePush(op) { const q = queueLoad(); q.push(op); queueSave(q); }
+    function updateSyncBtn() {
+      const n = queueLoad().length, btn = $('#syncBtn'), row = $('#syncRow');
+      if (!btn) return;
+      if (n > 0 || isOffline) { row.style.display = 'flex'; btn.textContent = '🔄 同步到云端（待同步 ' + n + ' 条）'; }
+      else { row.style.display = 'none'; }
+    }
+
+    // ---- Supabase 管理接口 ----
     async function api(path, body) {
       const sb = window.__getSb && window.__getSb();
       const payload = Object.assign({ admin }, body);
@@ -93,7 +111,7 @@
       return fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).then(r => r.json());
     }
 
-    // 登录鉴权：优先 Supabase；不可达时回退本地兜底密码（仍可进入后台）
+    // ---- 登录鉴权：优先 Supabase；不可达时回退本地兜底密码 ----
     async function tryLogin(pwd) {
       const sb = window.__getSb && window.__getSb();
       if (sb) {
@@ -101,10 +119,8 @@
           const { data: authed, error } = await sb.rpc('admin_auth', { k: pwd });
           if (!error && authed) return { ok: true, offline: false };
           if (!error && !authed) return { ok: false, message: '密码错误' };
-          // 有 error 说明网络不可达，继续走下方离线兜底
         } catch (e) { /* 网络不可达，继续离线兜底 */ }
       }
-      // 离线兜底：本地密码匹配即可进入（此时数据库不可达，仅能看面板）
       if (pwd === window.ADMIN_PWD_LOCAL) return { ok: true, offline: true };
       return { ok: false, message: '密码错误，或数据库不可达（请检查网络/代理）' };
     }
@@ -115,8 +131,29 @@
       b = document.createElement('div');
       b.id = 'offlineBanner';
       b.style.cssText = 'background:#fff3cd;color:#856404;padding:10px 12px;border-radius:10px;font-size:13px;margin-bottom:12px;line-height:1.5;';
-      b.textContent = '⚠️ 当前数据库不可达（可能未开启代理/VPN，或 supabase.co 直连被拦截）。已用本地密码进入后台，但卡密的读取与增删改需联网后再操作。';
+      b.textContent = '⚠️ 当前数据库不可达（可能未开启代理/VPN，或 supabase.co 直连被拦截）。已用本地密码进入后台；离线期间的增删改会暂存在本机，联网后点「同步到云端」即可上传。';
       $('#panel').prepend(b);
+    }
+
+    // 把离线队列里的变更回放到云端
+    async function syncPending(silent) {
+      const sb = window.__getSb && window.__getSb();
+      let online = false;
+      if (sb) { try { const { data, error } = await sb.rpc('admin_auth', { k: admin }); if (!error && data) online = true; } catch (e) {} }
+      if (!online) { if (!silent) $('#opMsg').textContent = '仍离线，无法同步'; return; }
+      isOffline = false;
+      const ob = document.getElementById('offlineBanner'); if (ob) ob.remove();
+      const q = queueLoad();
+      if (!q.length) { if (!silent) $('#opMsg').textContent = '没有待同步的变更'; updateSyncBtn(); return; }
+      for (const op of q) {
+        if (op.op === 'add') await api('/api/admin/add', { password: op.password, uses: op.uses });
+        else if (op.op === 'reset') await api('/api/admin/reset', { password: op.password });
+        else if (op.op === 'del') await api('/api/admin/del', { password: op.password });
+      }
+      queueSave([]);
+      await refresh();
+      if (!silent) $('#opMsg').textContent = '已同步 ' + q.length + ' 条变更到云端';
+      updateSyncBtn();
     }
 
     $('#loginBtn').onclick = async () => {
@@ -128,20 +165,29 @@
       $('#panel').style.display = 'block';
       if (d.offline) { isOffline = true; showOfflineBanner(); }
       await refresh();
+      updateSyncBtn();
+      if (!isOffline && queueLoad().length > 0) await syncPending(true); // 联机且有积压：自动同步
+      updateSyncBtn();
     };
 
     async function refresh() {
       if (isOffline) {
-        $('#list').innerHTML = '<tr><td colspan="3" style="color:#856404;text-align:center">离线模式：无法加载卡密，请联网后刷新页面</td></tr>';
+        const list = cacheLoad();
+        if (list.length) render(list);
+        else $('#list').innerHTML = '<tr><td colspan="3" style="color:#856404;text-align:center">离线模式：暂无缓存数据，联网后将自动加载并可读写</td></tr>';
         return;
       }
       const d = await api('/api/admin/list', {});
       if (!d.ok) {
+        const list = cacheLoad();
+        if (list.length) { render(list); $('#opMsg').textContent = '（在线读取失败，暂显示本地缓存）'; return; }
         $('#list').innerHTML = '<tr><td colspan="3" style="color:#b0a0a8;text-align:center">' + (d.message || '读取失败') + '</td></tr>';
         return;
       }
+      cacheSave(d.list);
       render(d.list);
     }
+
     function render(list) {
       const tb = $('#list'); tb.innerHTML = '';
       if (!list.length) { tb.innerHTML = '<tr><td colspan="3" style="color:#b0a0a8;text-align:center">暂无密码，请在上方添加</td></tr>'; return; }
@@ -157,26 +203,59 @@
       });
       tb.querySelectorAll('button[data-act]').forEach(b => {
         b.onclick = async () => {
-          if (isOffline) { $('#opMsg').textContent = '离线模式：请先联网后再操作'; return; }
           const act = b.dataset.act, p = b.dataset.p;
-          let d;
-          if (act === 'reset') d = await api('/api/admin/reset', { password: p, uses: 3 });
-          else d = await api('/api/admin/del', { password: p });
-          $('#opMsg').textContent = d.ok ? (act === 'del' ? '已删除' : '已重置为 3 次') : (d.message || '操作失败');
-          await refresh();
+          if (act === 'reset') await doReset(p);
+          else await doDel(p);
         };
       });
     }
 
-    $('#addBtn').onclick = async () => {
-      if (isOffline) { $('#opMsg').textContent = '离线模式：请先联网后再操作'; return; }
-      const p = $('#newPwd').value.trim();
-      const u = parseInt($('#newUses').value, 10) || 3;
-      if (!p) { $('#opMsg').textContent = '请输入新密码'; return; }
+    // 增删改：联机走 Supabase，离线写本地缓存并记入待同步队列
+    async function doAdd(p, u) {
+      if (isOffline) {
+        const list = cacheLoad();
+        const i = list.findIndex(x => x.password === p);
+        if (i >= 0) list[i].uses = u; else list.push({ password: p, uses: u });
+        cacheSave(list); render(list);
+        queuePush({ op: 'add', password: p, uses: u });
+        $('#opMsg').textContent = '已离线添加「' + p + '」，联网后自动同步'; updateSyncBtn(); return;
+      }
       const d = await api('/api/admin/add', { password: p, uses: u });
       $('#opMsg').textContent = d.ok ? ('已添加密码「' + p + '」') : (d.message || '添加失败');
       if (d.ok) { $('#newPwd').value = ''; await refresh(); }
+    }
+    async function doReset(p) {
+      if (isOffline) {
+        const list = cacheLoad();
+        const i = list.findIndex(x => x.password === p);
+        if (i >= 0) list[i].uses = 3;
+        cacheSave(list); render(list);
+        queuePush({ op: 'reset', password: p, uses: 3 });
+        $('#opMsg').textContent = '已离线重置「' + p + '」为 3 次，联网后自动同步'; updateSyncBtn(); return;
+      }
+      const d = await api('/api/admin/reset', { password: p });
+      $('#opMsg').textContent = d.ok ? '已重置为 3 次' : (d.message || '操作失败');
+      await refresh();
+    }
+    async function doDel(p) {
+      if (isOffline) {
+        const list = cacheLoad().filter(x => x.password !== p);
+        cacheSave(list); render(list);
+        queuePush({ op: 'del', password: p });
+        $('#opMsg').textContent = '已离线删除「' + p + '」，联网后自动同步'; updateSyncBtn(); return;
+      }
+      const d = await api('/api/admin/del', { password: p });
+      $('#opMsg').textContent = d.ok ? '已删除' : (d.message || '操作失败');
+      await refresh();
+    }
+
+    $('#addBtn').onclick = async () => {
+      const p = $('#newPwd').value.trim();
+      const u = parseInt($('#newUses').value, 10) || 3;
+      if (!p) { $('#opMsg').textContent = '请输入新密码'; return; }
+      await doAdd(p, u);
     };
+    $('#syncBtn').onclick = () => syncPending(false);
   </script>
 </body>
 </html>
