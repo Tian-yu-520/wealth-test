@@ -6,14 +6,38 @@
 
   const state = { step: 0, ans: {}, password: null, shared: false, result: null };
 
+  // 离线核销队列：断网时先乐观放行，联网后自动回放 consume_password
+  const LS_PW_QUEUE = 'wt_unlock_queue';
+  function pwQueueLoad() { try { return JSON.parse(localStorage.getItem(LS_PW_QUEUE) || '[]'); } catch (e) { return []; } }
+  function pwQueueSave(a) { try { localStorage.setItem(LS_PW_QUEUE, JSON.stringify(a || [])); } catch (e) {} }
+  function pwQueuePush(p) { const a = pwQueueLoad(); a.push(p); pwQueueSave(a); }
+
+  // 把离线期间累计的卡密回放到 Supabase（用不存在的探测码探活，不会误消耗真实码）
+  async function flushPwQueue() {
+    const sb = window.__getSb && window.__getSb();
+    if (!sb) return;
+    const q = pwQueueLoad();
+    if (!q.length) return;
+    let online = false;
+    try { const { error } = await sb.rpc('consume_password', { p: '__offline_probe__' }); if (!error) online = true; } catch (e) {}
+    if (!online) return;
+    for (const pwd of q) { try { await sb.rpc('consume_password', { p: pwd }); } catch (e) {} }
+    pwQueueSave([]);
+    toast('已联网核销 ' + q.length + ' 个离线密码');
+  }
+
   // 密码校验：优先走 Supabase（已配置），否则回退本地 server.js
   async function unlockRequest(pwd) {
     const sb = window.__getSb && window.__getSb();
     if (sb) {
-      const { data, error } = await sb.rpc('consume_password', { p: pwd });
-      if (error) return { ok: false, message: '网络错误，请重试' };
-      if (data === null) return { ok: false, message: '密码无效或已用完' };
-      return { ok: true };
+      try {
+        const { data, error } = await sb.rpc('consume_password', { p: pwd });
+        if (error) { pwQueuePush(pwd); return { ok: true, offline: true, message: '离线模式：已记录，联网后自动核销' }; }
+        if (data === null) return { ok: false, message: '密码无效或已用完' };
+        return { ok: true };
+      } catch (e) {
+        pwQueuePush(pwd); return { ok: true, offline: true, message: '离线模式：已记录，联网后自动核销' };
+      }
     }
     const r = await fetch('/api/unlock', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -38,6 +62,7 @@
     try {
       const d = await unlockRequest(pwd);
       if (!d.ok) { $('#pwMsg').textContent = d.message || '密码错误'; $('#pwBtn').disabled = false; return; }
+      if (d.offline) toast(d.message || '离线记录成功');
       state.password = pwd;
       state.step = FREE; showScreen('quiz'); renderQuestion();   // 进入第 6 题并切回答题界面
     } catch (e) { $('#pwMsg').textContent = '网络错误，请重试'; $('#pwBtn').disabled = false; }
@@ -138,6 +163,7 @@
     try {
       const d = await unlockRequest(state.password);
       if (!d.ok) { toast(d.message || '密码已用完'); return; }
+      if (d.offline) toast(d.message || '离线记录成功');
     } catch (e) { toast('网络错误'); return; }
     state.step = 0; state.ans = {}; state.result = null; state.password = state.password;
     showScreen('quiz'); renderQuestion();
@@ -167,4 +193,8 @@
   }
 
   if (!loadHash()) showScreen('gate');
+
+  // 联网后自动回放离线核销队列
+  window.addEventListener('online', flushPwQueue);
+  if (navigator.onLine) flushPwQueue();
 })();
