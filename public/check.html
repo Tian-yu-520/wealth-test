@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>后端自检 · 财富体质测试</title>
+<style>
+  body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif;background:#FFF6EE;margin:0;padding:20px;color:#3a2b30;}
+  .box{max-width:480px;margin:0 auto;background:#fff;border-radius:20px;padding:24px;box-shadow:0 10px 30px rgba(214,51,108,.12);}
+  h1{font-size:20px;color:#D6336C;margin:0 0 6px;}
+  .sub{font-size:13px;color:#9a8a90;margin:0 0 18px;}
+  .row{display:flex;align-items:flex-start;gap:10px;padding:12px 0;border-top:1px dashed #FFD9C2;}
+  .row:first-of-type{border-top:none;}
+  .ico{font-size:20px;line-height:1.2;flex:none;}
+  .t{font-size:14px;font-weight:700;margin:0 0 2px;}
+  .d{font-size:13px;color:#777;line-height:1.6;margin:0;}
+  .ok{color:#00996B}.bad{color:#D6336C}.wait{color:#C27700}
+  .tip{margin-top:16px;padding:12px 14px;background:#FFF3D6;border-radius:12px;font-size:13px;line-height:1.7;color:#7a4b1a;}
+  code{background:#FFE9C2;padding:1px 6px;border-radius:6px;font-size:12px;}
+  .btn{margin-top:16px;width:100%;padding:13px;border:none;border-radius:14px;background:linear-gradient(135deg,#FF8A3D,#E0249B);color:#fff;font-size:15px;font-weight:800;cursor:pointer;}
+</style>
+</head>
+<body>
+<div class="box">
+  <h1>🔌 后端自检</h1>
+  <p class="sub">检测 Supabase 数据库是否已正确初始化 · 不影响任何真实密码</p>
+  <div id="out"></div>
+  <div id="tip"></div>
+  <button class="btn" onclick="run()">重新检测</button>
+</div>
+<script src="supabase-config.js"></script>
+<script>
+function line(icon, title, desc, cls) {
+  return '<div class="row"><span class="ico">' + icon + '</span><div>' +
+    '<p class="t ' + (cls || '') + '">' + title + '</p><p class="d">' + desc + '</p></div></div>';
+}
+async function run() {
+  var out = document.getElementById('out'), tip = document.getElementById('tip');
+  out.innerHTML = line('⏳', '正在检测…', '请稍候', 'wait');
+  tip.innerHTML = '';
+  var url = (window.SUPABASE_URL || '').replace(/\/$/, '');
+  var key = window.SUPABASE_ANON_KEY || '';
+  if (!url || url.indexOf('REPLACE') >= 0 || key.indexOf('REPLACE') >= 0) {
+    out.innerHTML = line('❌', '配置缺失', 'SUPABASE_URL 或 anon key 尚未填入', 'bad');
+    return;
+  }
+  var r1 = line('✅', 'Supabase 配置已读取', '项目地址：<code>' + url.replace('https://', '') + '</code>', 'ok');
+
+  // 探测：调用 consume_password 传入一个不存在的密码（不会消耗任何真实次数）
+  var res, note, ok = true, cls = 'ok';
+  try {
+    var resp = await fetch(url + '/rest/v1/rpc/consume_password', {
+      method: 'POST',
+      headers: { 'apikey': key, 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p: '__probe_nonexist_' + Date.now() })
+    });
+    if (resp.status === 404) {
+      note = '函数 consume_password 不存在 —— 说明<b>还没有执行过 schema.sql</b>';
+      cls = 'bad'; ok = false;
+    } else if (resp.ok) {
+      note = '数据库函数已就绪，前后端链路打通';
+    } else {
+      var t = await resp.text();
+      note = '异常响应 ' + resp.status + '：' + t.slice(0, 120);
+      cls = 'bad'; ok = false;
+    }
+    res = line(ok ? '✅' : '❌', ok ? '数据库连接正常' : '数据库连接失败', note, cls);
+  } catch (e) {
+    res = line('❌', '无法连接 Supabase', '可能是网络被拦截或项目暂停：' + (e.message || e), 'bad');
+    ok = false;
+  }
+
+  out.innerHTML = r1 + res;
+  if (!ok) {
+    tip.innerHTML = '<div class="tip"><b>如何修复：</b><br>' +
+      '1. 打开 Supabase 控制台 → 左侧 <b>SQL Editor</b> → New query<br>' +
+      '2. 把项目里的 <code>supabase/schema.sql</code> 全文粘贴进去，点 <b>Run</b><br>' +
+      '3. 回到本页重新检测<br>' +
+      '（若项目显示 Paused，请在 Supabase 后台点 Restore 恢复）</div>';
+  } else {
+    tip.innerHTML = '<div class="tip">✅ 一切正常！现在可以打开<a href="index.html"><b>正式测试页</b></a>，用你的卡密实测一次。</div>';
+  }
+}
+run();
+</script>
+</body>
+</html>
