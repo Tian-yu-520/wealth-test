@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>密码管理后台 · 财富体质测试</title>
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; background: #fff0f5; color: #2b2b2b; margin: 0; padding: 16px; }
+    .wrap { max-width: 520px; margin: 0 auto; }
+    h1 { font-size: 20px; color: #ff2d6f; text-align: center; }
+    .card { background: #fff; border-radius: 16px; padding: 16px; box-shadow: 0 8px 28px rgba(255,90,140,0.12); margin-bottom: 14px; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    input { flex: 1; min-width: 120px; padding: 11px 12px; font-size: 15px; border: 1.5px solid #ffe1ec; border-radius: 10px; outline: none; }
+    input:focus { border-color: #ff2d6f; }
+    button { padding: 11px 14px; font-size: 14px; border: none; border-radius: 10px; background: linear-gradient(135deg, #ff8fb3, #ff2d6f); color: #fff; font-weight: 600; cursor: pointer; }
+    button.ghost { background: #f6f6f6; color: #888; }
+    button.sm { padding: 7px 10px; font-size: 13px; }
+    .msg { text-align: center; font-size: 13px; min-height: 18px; margin: 8px 0; color: #ff2d6f; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { padding: 10px 8px; text-align: left; border-bottom: 1px dashed #ffd6e4; }
+    th { color: #b0a0a8; font-weight: 500; font-size: 12px; }
+    .pill { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+    .pill.ok { background: #ffe1ec; color: #ff2d6f; }
+    .pill.zero { background: #f0f0f0; color: #999; }
+    .acts { display: flex; gap: 6px; }
+    .hint { font-size: 12px; color: #b0a0a8; text-align: center; margin-top: 4px; }
+    a.back { display: block; text-align: center; color: #ff2d6f; font-size: 13px; text-decoration: none; margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>🔐 密码管理后台</h1>
+
+    <div class="card">
+      <div class="row">
+        <input id="adminPwd" type="password" placeholder="管理员密码（默认 admin888）" autocomplete="off" />
+        <button id="loginBtn">进入</button>
+      </div>
+      <p class="msg" id="loginMsg"></p>
+    </div>
+
+    <div class="card" id="panel" style="display:none">
+      <div class="row" style="margin-bottom:12px">
+        <input id="newPwd" placeholder="新密码（发给顾客用）" autocomplete="off" />
+        <input id="newUses" type="number" value="3" min="1" style="flex:0 0 90px" />
+        <button id="addBtn">添加</button>
+      </div>
+      <p class="msg" id="opMsg"></p>
+      <table>
+        <thead><tr><th>密码</th><th>剩余次数</th><th>操作</th></tr></thead>
+        <tbody id="list"></tbody>
+      </table>
+      <a class="back" href="/">← 返回测试首页</a>
+    </div>
+    <p class="hint">管理员密码默认 admin888，上线前请修改 server.js 中的 ADMIN_PWD 或设置环境变量。</p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js?v=6"></script>
+  <script>
+    const $ = s => document.querySelector(s);
+    let admin = '';
+
+    // 管理接口：优先走 Supabase（已配置），否则回退本地 server.js
+    async function api(path, body) {
+      const sb = window.__getSb && window.__getSb();
+      const payload = Object.assign({ admin }, body);
+      if (sb) {
+        try {
+          if (path.endsWith('/admin/list')) {
+            const { data: authed } = await sb.rpc('admin_auth', { k: admin });
+            if (!authed) return { ok: false, message: '密码错误' };
+            const { data, error } = await sb.rpc('admin_list', { k: admin });
+            if (error) return { ok: false, message: '读取失败' };
+            return { ok: true, list: data };
+          }
+          if (path.endsWith('/admin/add')) {
+            const { error } = await sb.rpc('admin_add', { k: admin, p: payload.password, u: payload.uses });
+            return error ? { ok: false, message: '添加失败' } : { ok: true };
+          }
+          if (path.endsWith('/admin/reset')) {
+            const { error } = await sb.rpc('admin_reset', { k: admin, p: payload.password });
+            return error ? { ok: false, message: '操作失败' } : { ok: true };
+          }
+          if (path.endsWith('/admin/del')) {
+            const { error } = await sb.rpc('admin_del', { k: admin, p: payload.password });
+            return error ? { ok: false, message: '操作失败' } : { ok: true };
+          }
+        } catch (e) { return { ok: false, message: '网络错误' }; }
+      }
+      return fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).then(r => r.json());
+    }
+
+    $('#loginBtn').onclick = async () => {
+      admin = $('#adminPwd').value.trim();
+      const d = await api('/api/admin/list', {});
+      if (!d.ok) { $('#loginMsg').textContent = d.message || '密码错误'; return; }
+      $('#loginMsg').textContent = '';
+      $('#panel').style.display = 'block';
+      render(d.list);
+    };
+
+    async function refresh() { const d = await api('/api/admin/list', {}); if (d.ok) render(d.list); }
+    function render(list) {
+      const tb = $('#list'); tb.innerHTML = '';
+      if (!list.length) { tb.innerHTML = '<tr><td colspan="3" style="color:#b0a0a8;text-align:center">暂无密码，请在上方添加</td></tr>'; return; }
+      list.forEach(it => {
+        const tr = document.createElement('tr');
+        const pill = it.uses > 0 ? '<span class="pill ok">' + it.uses + ' 次</span>' : '<span class="pill zero">已用完</span>';
+        tr.innerHTML = '<td>' + it.password + '</td><td>' + pill + '</td>' +
+          '<td><div class="acts">' +
+          '<button class="ghost sm" data-act="reset" data-p="' + it.password + '">重置3次</button>' +
+          '<button class="ghost sm" data-act="del" data-p="' + it.password + '">删除</button>' +
+          '</div></td>';
+        tb.appendChild(tr);
+      });
+      tb.querySelectorAll('button[data-act]').forEach(b => {
+        b.onclick = async () => {
+          const act = b.dataset.act, p = b.dataset.p;
+          let d;
+          if (act === 'reset') d = await api('/api/admin/reset', { password: p, uses: 3 });
+          else d = await api('/api/admin/del', { password: p });
+          $('#opMsg').textContent = d.ok ? (act === 'del' ? '已删除' : '已重置为 3 次') : (d.message || '操作失败');
+          await refresh();
+        };
+      });
+    }
+
+    $('#addBtn').onclick = async () => {
+      const p = $('#newPwd').value.trim();
+      const u = parseInt($('#newUses').value, 10) || 3;
+      if (!p) { $('#opMsg').textContent = '请输入新密码'; return; }
+      const d = await api('/api/admin/add', { password: p, uses: u });
+      $('#opMsg').textContent = d.ok ? ('已添加密码「' + p + '」') : (d.message || '添加失败');
+      if (d.ok) { $('#newPwd').value = ''; await refresh(); }
+    };
+  </script>
+</body>
+</html>
