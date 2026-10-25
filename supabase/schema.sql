@@ -15,7 +15,10 @@ create table if not exists public.admin_secret (
   id        integer primary key default 1,
   admin_key text not null
 );
-insert into public.admin_secret (id, admin_key) values (1, 'admin888')
+-- 注意：此行仅在表为空时写入（on conflict do nothing）。
+-- 已上线后若要改管理员密码，请在 Supabase SQL Editor 执行：
+--   update public.admin_secret set admin_key = '你的新密码' where id = 1;
+insert into public.admin_secret (id, admin_key) values (1, '@Liyu5201314')
 on conflict (id) do nothing;
 
 -- 3) 开启行级安全，但不给 anon/authenticated 任何直接访问策略
