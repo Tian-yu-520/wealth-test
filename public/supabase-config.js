@@ -23,3 +23,9 @@ window.__getSb = function () {
   }
   return window.__sb;
 };
+
+// 本地兜底管理员密码（仅离线时使用）：当 Supabase 不可达（如关闭代理/VPN、
+// 或 supabase.co 直连被墙）时，用此密码仍可直接进入后台面板。
+// 注意：此值以明文存在于前端，仅作"离线兜底"用途；正式鉴权仍以
+// Supabase admin_secret 表中的 admin_key 为准（在线时优先走数据库校验）。
+window.ADMIN_PWD_LOCAL = '@Liyu5201314';
