@@ -53,14 +53,15 @@
       </table>
       <a class="back" href="/">← 返回测试首页</a>
     </div>
-    <p class="hint">管理员密码默认 admin888，上线前请修改 server.js 中的 ADMIN_PWD 或设置环境变量。</p>
+    <p class="hint">管理员密码存在 Supabase 的 admin_secret 表中。如需修改，请到 Supabase 控制台 SQL Editor 执行：update public.admin_secret set admin_key = '新密码' where id = 1;</p>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase-config.js?v=6"></script>
+  <script src="supabase-config.js?v=13"></script>
   <script>
     const $ = s => document.querySelector(s);
     let admin = '';
+    let isOffline = false;   // Supabase 不可达时为 true（离线兜底模式）
 
     // 管理接口：优先走 Supabase（已配置），否则回退本地 server.js
     async function api(path, body) {
@@ -92,16 +93,55 @@
       return fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).then(r => r.json());
     }
 
+    // 登录鉴权：优先 Supabase；不可达时回退本地兜底密码（仍可进入后台）
+    async function tryLogin(pwd) {
+      const sb = window.__getSb && window.__getSb();
+      if (sb) {
+        try {
+          const { data: authed, error } = await sb.rpc('admin_auth', { k: pwd });
+          if (!error && authed) return { ok: true, offline: false };
+          if (!error && !authed) return { ok: false, message: '密码错误' };
+          // 有 error 说明网络不可达，继续走下方离线兜底
+        } catch (e) { /* 网络不可达，继续离线兜底 */ }
+      }
+      // 离线兜底：本地密码匹配即可进入（此时数据库不可达，仅能看面板）
+      if (pwd === window.ADMIN_PWD_LOCAL) return { ok: true, offline: true };
+      return { ok: false, message: '密码错误，或数据库不可达（请检查网络/代理）' };
+    }
+
+    function showOfflineBanner() {
+      let b = document.getElementById('offlineBanner');
+      if (b) return;
+      b = document.createElement('div');
+      b.id = 'offlineBanner';
+      b.style.cssText = 'background:#fff3cd;color:#856404;padding:10px 12px;border-radius:10px;font-size:13px;margin-bottom:12px;line-height:1.5;';
+      b.textContent = '⚠️ 当前数据库不可达（可能未开启代理/VPN，或 supabase.co 直连被拦截）。已用本地密码进入后台，但卡密的读取与增删改需联网后再操作。';
+      $('#panel').prepend(b);
+    }
+
     $('#loginBtn').onclick = async () => {
-      admin = $('#adminPwd').value.trim();
-      const d = await api('/api/admin/list', {});
+      const pwd = $('#adminPwd').value.trim();
+      const d = await tryLogin(pwd);
       if (!d.ok) { $('#loginMsg').textContent = d.message || '密码错误'; return; }
       $('#loginMsg').textContent = '';
+      admin = pwd;
       $('#panel').style.display = 'block';
-      render(d.list);
+      if (d.offline) { isOffline = true; showOfflineBanner(); }
+      await refresh();
     };
 
-    async function refresh() { const d = await api('/api/admin/list', {}); if (d.ok) render(d.list); }
+    async function refresh() {
+      if (isOffline) {
+        $('#list').innerHTML = '<tr><td colspan="3" style="color:#856404;text-align:center">离线模式：无法加载卡密，请联网后刷新页面</td></tr>';
+        return;
+      }
+      const d = await api('/api/admin/list', {});
+      if (!d.ok) {
+        $('#list').innerHTML = '<tr><td colspan="3" style="color:#b0a0a8;text-align:center">' + (d.message || '读取失败') + '</td></tr>';
+        return;
+      }
+      render(d.list);
+    }
     function render(list) {
       const tb = $('#list'); tb.innerHTML = '';
       if (!list.length) { tb.innerHTML = '<tr><td colspan="3" style="color:#b0a0a8;text-align:center">暂无密码，请在上方添加</td></tr>'; return; }
@@ -117,6 +157,7 @@
       });
       tb.querySelectorAll('button[data-act]').forEach(b => {
         b.onclick = async () => {
+          if (isOffline) { $('#opMsg').textContent = '离线模式：请先联网后再操作'; return; }
           const act = b.dataset.act, p = b.dataset.p;
           let d;
           if (act === 'reset') d = await api('/api/admin/reset', { password: p, uses: 3 });
@@ -128,6 +169,7 @@
     }
 
     $('#addBtn').onclick = async () => {
+      if (isOffline) { $('#opMsg').textContent = '离线模式：请先联网后再操作'; return; }
       const p = $('#newPwd').value.trim();
       const u = parseInt($('#newUses').value, 10) || 3;
       if (!p) { $('#opMsg').textContent = '请输入新密码'; return; }
