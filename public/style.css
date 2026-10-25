@@ -1,0 +1,228 @@
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  background: #fff0f5;
+  color: #2b2b2b;
+  line-height: 1.6;
+}
+#app { max-width: 480px; margin: 0 auto; padding: 16px; min-height: 100vh; }
+
+.screen { display: flex; align-items: flex-start; justify-content: center; padding-top: 6vh; }
+.hidden { display: none !important; }
+
+.card {
+  width: 100%;
+  background: #fff;
+  border-radius: 18px;
+  padding: 22px 20px;
+  box-shadow: 0 8px 28px rgba(255,90,140,0.14);
+}
+
+/* 通用按钮 */
+.btn {
+  width: 100%; padding: 13px; font-size: 16px; border: none; border-radius: 12px;
+  cursor: pointer; background: #ffe1ec; color: #ff2d6f; font-weight: 600;
+  transition: transform .08s;
+}
+.btn:active { transform: scale(.98); }
+.btn.primary { background: linear-gradient(135deg, #ff8fb3, #ff2d6f); color: #fff; }
+.btn.ghost { background: #f6f6f6; color: #888; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.msg { color: #e23b5a; font-size: 13px; text-align: center; min-height: 18px; margin: 10px 0 0; }
+
+/* ---------- 首页 ---------- */
+.intro { text-align: center; background: linear-gradient(180deg, #fff 0%, #fff6fa 100%); }
+.intro-badge {
+  display: inline-block; font-size: 12px; color: #ff2d6f; background: #ffe1ec;
+  padding: 5px 12px; border-radius: 20px; margin-bottom: 14px;
+}
+.intro h1 { font-size: 25px; line-height: 1.35; margin: 4px 0 10px; color: #2b2b2b; }
+.intro .sub { color: #8a8a8a; font-size: 14px; margin: 0 0 18px; }
+.intro-stats { display: flex; justify-content: space-around; margin: 0 0 22px; }
+.intro-stats div { display: flex; flex-direction: column; align-items: center; }
+.intro-stats b { font-size: 24px; color: #ff2d6f; }
+.intro-stats span { font-size: 11px; color: #9a9a9a; margin-top: 2px; }
+.intro .btn { margin-bottom: 12px; }
+.hint { text-align: center; color: #b0a0a8; font-size: 12px; margin: 4px 0 0; }
+
+/* ---------- 答题 ---------- */
+.progress { height: 6px; background: #ffe1ec; border-radius: 4px; overflow: hidden; margin-bottom: 10px; }
+#bar { height: 100%; width: 0; background: linear-gradient(90deg, #ff8fb3, #ff2d6f); transition: width .2s; }
+.qcount { font-size: 12px; color: #b0a0a8; margin: 0 0 6px; }
+.free-pill {
+  display: inline-block; font-size: 10px; color: #ff2d6f; background: #ffe1ec;
+  padding: 1px 8px; border-radius: 10px; margin-left: 4px; vertical-align: middle;
+}
+#qText { font-size: 17px; font-weight: 600; margin: 4px 0 16px; line-height: 1.5; }
+#opts { display: flex; flex-direction: column; gap: 10px; }
+.opt {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  padding: 13px 14px; font-size: 15px; border: 1.5px solid #ffe1ec; border-radius: 12px;
+  background: #fff; cursor: pointer; color: #2b2b2b;
+}
+.opt .dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #ffb3cd; flex: none; }
+.opt.sel { border-color: #ff2d6f; background: #fff0f6; }
+.opt.sel .dot { border-color: #ff2d6f; background: #ff2d6f; }
+.quiz-nav { display: flex; gap: 10px; margin-top: 18px; }
+.quiz-nav .btn { flex: 1; }
+
+/* ---------- 解锁层 ---------- */
+.pwcard { text-align: center; }
+.pw-emoji { font-size: 40px; }
+.pwcard h2 { font-size: 20px; margin: 6px 0 8px; }
+.pwcard .sub { color: #8a8a8a; font-size: 14px; margin: 0 0 18px; }
+#pwd {
+  width: 100%; padding: 13px 14px; font-size: 16px; border: 1.5px solid #ffe1ec;
+  border-radius: 12px; margin-bottom: 12px; outline: none; text-align: center;
+}
+#pwd:focus { border-color: #ff2d6f; }
+
+/* ---------- 结果长图（多巴胺撞色版） ---------- */
+.result-card {
+  background: linear-gradient(180deg, #FFF4F7 0%, #fff 30%);
+  border-radius: 24px; overflow: hidden; padding: 0;
+  box-shadow: 0 14px 44px rgba(230,80,120,0.18);
+}
+.rc-top {
+  background: linear-gradient(135deg, #FF9A4D 0%, #FF4D7D 50%, #A96BFF 100%);
+  color: #fff; padding: 26px 22px 30px; text-align: center;
+}
+.rc-handle { font-size: 12px; opacity: .95; letter-spacing: 1px; }
+.rc-cover-tag {
+  display: inline-block; margin-top: 12px; font-size: 11px;
+  background: rgba(255,255,255,.25); padding: 3px 12px; border-radius: 20px;
+}
+.rc-emoji { margin: 14px 0 6px; line-height: 1; }
+.rc-emoji svg { width: 104px; height: 104px; display: block; margin: 0 auto; filter: drop-shadow(0 6px 10px rgba(120,30,60,0.25)); }
+.rc-name { font-size: 26px; font-weight: 800; margin: 0; letter-spacing: 1px; }
+.rc-verdict { font-size: 14px; opacity: .97; margin: 8px 0 0; }
+.rc-hook {
+  margin: 12px auto 0; display: inline-block; font-size: 13px; font-weight: 700;
+  background: rgba(255,255,255,.94); color: #D6336C; padding: 6px 16px; border-radius: 22px;
+  box-shadow: 0 4px 14px rgba(214,51,108,.18);
+}
+.rc-body { padding: 18px 18px 10px; }
+
+.rc-radar { width: 80%; max-width: 260px; margin: 6px auto 14px; }
+.rc-badge {
+  text-align: center; font-size: 13px; color: #C2557A; font-weight: 700;
+  background: #FFF3E8; border-radius: 20px; padding: 7px 10px; margin-bottom: 16px;
+}
+.rc-block { padding: 14px 0; border-top: 1px solid #F5E6EC; }
+.rc-h {
+  font-size: 15px; font-weight: 800; color: #D6336C; margin: 0 0 10px;
+  display: flex; align-items: center; gap: 6px;
+}
+/* 板块标题统一玫红：靠 emoji 图标区分内容，不再四色各一，整体聚焦不散 */
+.rc-block.bk-portrait .rc-h,
+.rc-block.bk-dim .rc-h,
+.rc-block.bk-why .rc-h,
+.rc-block.bk-fix .rc-h { color: #D6336C; }
+.rc-block p { margin: 0; font-size: 14px; color: #444; line-height: 1.62; }
+.rc-block ul { margin: 0; padding-left: 18px; }
+.rc-block li { font-size: 14px; color: #444; margin: 6px 0; line-height: 1.6; }
+
+/* ---------- 分数块：巨型分数 + 冲突感横幅 ---------- */
+.rc-scorebox {
+  text-align: center;
+  background: linear-gradient(160deg, #FFF7F9 0%, #FFF1F5 100%);
+  border: 1px solid #FBE3EA;
+  border-radius: 20px; padding: 20px 16px 18px; margin: 4px 0 16px;
+  box-shadow: 0 6px 18px rgba(230,80,120,0.10);
+}
+.rc-score-label { font-size: 13px; color: #C2557A; font-weight: 800; letter-spacing: 2px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.rc-scale { font-size: 11px; font-weight: 700; color: #B5657E; background: #FFEAF0; padding: 1px 8px; border-radius: 8px; letter-spacing: 0; }
+.rc-score-num {
+  font-size: 48px; font-weight: 900; line-height: 1; margin: 6px 0 10px;
+  background: linear-gradient(135deg,#FF8A3D,#E0249B);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.rc-score-num span { font-size: 22px; font-weight: 900; margin-left: 2px; -webkit-text-fill-color: #D6336C; }
+.rc-unit { font-size: 17px; font-weight: 900; margin-left: 4px; -webkit-text-fill-color: #D6336C; }
+.rc-score-band {
+  display: inline-block; font-size: 15px; font-weight: 900; color: #fff;
+  background: linear-gradient(135deg,#FF8A3D,#E0249B); padding: 5px 18px; border-radius: 20px;
+  box-shadow: 0 4px 12px rgba(224,36,155,0.22);
+}
+.rc-impact {
+  margin: 14px 0 10px; padding: 10px 12px;
+  font-size: 14px; font-weight: 800; color: #FFE9CB; line-height: 1.5;
+  background: linear-gradient(135deg, #7E1B47 0%, #B32A6E 100%);
+  border-radius: 12px;
+}
+.rc-rarity {
+  display: inline-block; font-size: 13px; font-weight: 800; color: #B5657E;
+  background: #FFEAF0; padding: 5px 14px; border-radius: 14px;
+}
+/* 稀有徽章是全页唯一保留的高饱和强调色，呼应封面渐变尾端的紫 */
+.rc-rarity.rare {
+  color: #fff; background: linear-gradient(135deg,#8E44D6,#E0249B);
+  box-shadow: 0 4px 12px rgba(224,36,155,0.28);
+}
+
+/* ---------- 灵魂暴击块 ---------- */
+.rc-insights { padding: 14px 0 6px; margin: 0; background: transparent; }
+.rc-insights .rc-h { color: #D6336C; margin: 0 0 10px; }
+.rc-insights ul { margin: 0; padding: 0; list-style: none; }
+/* 整块粉底 → 三条带左竖线的小卡，去掉虚线边框，呼吸感更强 */
+.rc-insights li {
+  position: relative; padding: 9px 12px 9px 22px; margin: 8px 0;
+  font-size: 14px; color: #4A3038; line-height: 1.55; font-weight: 600;
+  background: #FFF8FA; border-radius: 10px;
+  border-left: 3px solid #FFC2D4;
+}
+.rc-insights li::before {
+  content: "\201C"; position: absolute; left: 8px; top: 1px;
+  font-size: 20px; color: #FFC2D4; font-weight: 900; line-height: 1;
+}
+
+.dim { display: flex; align-items: center; gap: 8px; margin: 8px 0; font-size: 13px; }
+.dn { width: 60px; color: #8A7A80; flex: none; }
+.dtrack { flex: 1; height: 9px; background: #FBEFF3; border-radius: 6px; overflow: hidden; }
+/* 六维条统一为品牌渐变（橙→玫红），六条形成同一节奏，不再彩虹散色 */
+.dfill { display: block; height: 100%; background: linear-gradient(90deg,#FF8A3D,#E0249B); }
+.dv { width: 30px; text-align: right; color: #D6336C; font-weight: 700; flex: none; }
+
+.rc-share { text-align: center; padding: 16px 0 4px; border-top: 1px solid #F5E6EC; }
+.share-cta {
+  font-size: 13px; font-weight: 800; color: #D6336C; margin: 0 0 8px;
+  background: #FFF1F5; display: inline-block; padding: 5px 14px; border-radius: 16px;
+}
+.share-line { color: #D6336C; font-weight: 800; font-size: 15px; margin: 0 0 10px; }
+.share-tags { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+/* 标签统一一色，去掉六色循环 */
+.share-tags span {
+  font-size: 12px; padding: 4px 11px; border-radius: 20px; font-weight: 600;
+  background: #FFF1F5; color: #D6336C;
+}
+
+.rc-qr {
+  display: flex; align-items: center; justify-content: center; gap: 14px;
+  margin: 8px auto 4px; padding: 14px; background: #FFF6E6; border-radius: 16px;
+  border: 2px dashed #FFB07A;
+}
+.rc-qr-img { width: 92px; height: 92px; border-radius: 10px; background: #fff; object-fit: cover; }
+.rc-qr-txt { text-align: left; }
+.rc-qr-txt b { display: block; font-size: 15px; color: #FF3D68; margin-bottom: 4px; }
+.rc-qr-txt span { font-size: 12px; color: #9a7b5f; }
+.rc-footer { text-align: center; font-size: 11px; color: #b0a0a8; padding: 14px 0 6px; }
+
+.result-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+.result-actions .btn { padding: 14px; font-size: 16px; }
+
+/* ---------- 弹窗 ---------- */
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; padding: 24px; z-index: 50; }
+.modal-box { background: #fff; border-radius: 18px; padding: 22px 20px; max-width: 340px; text-align: center; }
+.modal-box h3 { margin: 0 0 12px; font-size: 18px; color: #ff2d6f; }
+.modal-box p { font-size: 14px; margin: 0 0 10px; color: #444; }
+.modal-box .cs { color: #888; }
+.modal-box strong { color: #ff2d6f; }
+.modal-box .btn { margin-top: 6px; }
+
+/* toast */
+.toast {
+  position: fixed; left: 50%; bottom: 40px; transform: translateX(-50%);
+  background: rgba(0,0,0,0.82); color: #fff; padding: 10px 16px; border-radius: 22px;
+  font-size: 13px; z-index: 80; max-width: 84%;
+}
