@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-CN" data-page-node-id="NeiHkH8DJEff6nT7fXTPPa">
+<head data-page-node-id="ZF5PhBhxEbEUy7XGkttAHV">
+  <meta charset="utf-8" data-page-node-id="CehMf2r6ocum8qxAvTgHLF" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" data-page-node-id="VwHp1agHxgAbtKMlPLkHGS" />
+  <title>财富体质测试</title>
+  <link rel="stylesheet" href="style.css?v=12" data-page-node-id="uqy1kUPJUx16yFakODbRrJ" />
+</head>
+<body data-page-node-id="EQEou44YQq7wxELJZZAxeF">
+  <div id="app" data-page-node-id="mMp0BqeDYIHXHBDYFONTFj">
+    <!-- 首页 / 开场 -->
+    <section id="gate" class="screen" data-page-node-id="64CBBvhKTXDHBK24IDQdSw">
+      <div class="card intro" data-page-node-id="7DGWqw5rLzZjk6MhsyH2T4">
+        <div class="intro-badge" data-page-node-id="iyNsJ7iokw0Ae8PlC8q1ja">🔥 全网最准搞钱人格测试</div>
+        <h1 data-page-node-id="4gjAChNE7edqWGT82gqT0c">你天生是哪种<br data-page-node-id="uXE5NL7Fd8HYWZj0zG4ELD"/>搞钱物种？</h1>
+        <p class="sub" data-page-node-id="6GQm8jUXolR4acIYboC6zw">测完你可能会沉默：原来我一直在用错方式搞钱。</p>
+        <div class="intro-stats" data-page-node-id="UJFJXb9l10w7uHtILArKLH">
+          <div data-page-node-id="zdoAiGmWcSWL4IBwMz3ITB"><b data-page-node-id="LB8zN8TXtnobhNQrHBqNB0">30</b><span data-page-node-id="0KsS69pNO8WJl6tqG8Iyab">道真实情景题</span></div>
+          <div data-page-node-id="DigqU1LY0Dj9weOMOC8J7g"><b data-page-node-id="WIzR2PZE6V3uBXLb7ZELvK">6</b><span data-page-node-id="GSgSPJYcmPhSwC2XhGluKQ">维财富分析</span></div>
+          <div data-page-node-id="nKxp0PfYn04MvWxZGyGFMw"><b data-page-node-id="RccjwLAWPkm9QtWkO67Fzx">8</b><span data-page-node-id="svVc3RXFHQpVHlgL9HiiVO">种体质人格</span></div>
+        </div>
+        <button id="startBtn" class="btn primary" data-page-node-id="6LBbjZ7fHXYEiCClAkg79Z">免费开始测试</button>
+        <p class="hint" data-page-node-id="bA7mWKTKsDB7hELl78RS2a">前 5 题免费体验 · 完整 30 题需密码解锁 · 每个密码可测 3 次</p>
+      </div>
+    </section>
+
+    <!-- 答题 -->
+    <section id="quiz" class="screen hidden" data-page-node-id="SzIZPegf1tLW7eHo0NFDgh">
+      <div class="card" data-page-node-id="tigw8BgkWXX8vBYI0AL1uj">
+        <div class="progress" data-page-node-id="9wnCAySbF3lQVKX3kWftr0"><div id="bar" data-page-node-id="HMBWqhPYKwLfP6UjM97kuy"></div></div>
+        <p id="qCount" class="qcount" data-page-node-id="Fk4U42kAugrGp3FKUvTvT0"></p>
+        <h2 id="qText" data-page-node-id="hkoWAZYRoEUtbKHHEkDSws"></h2>
+        <div id="opts" data-page-node-id="ufZxwFghACoCFX5EvfN8pE"></div>
+        <div class="quiz-nav" data-page-node-id="p9NG52it6vfB4g5PD04OoV">
+          <button id="backBtn" class="btn ghost" data-page-node-id="2CPJBHURgecJMJDNRSHJBG">返回上一题</button>
+          <button id="nextBtn" class="btn primary" disabled data-page-node-id="7fNXWouteoUPPvjywWJrWm">下一题</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 解锁密码（第 6 题前弹出） -->
+    <section id="pwGate" class="screen hidden" data-page-node-id="KeR9Rm1EdbUjG9N5mDysPv">
+      <div class="card pwcard" data-page-node-id="oImMEACoSOG9WwRMy2YRFl">
+        <div class="pw-emoji" data-page-node-id="aD3P6QPMORqkloNUrAKx58">🔓</div>
+        <h2 data-page-node-id="oGuogGSi4ohs1BTUdHapts">解锁完整测试</h2>
+        <p class="sub" data-page-node-id="yLm8RbedQBFGvBtXohaXCZ">前 5 题已免费体验～<br data-page-node-id="vFlQJE8jY46rSBJohjc49L"/>输入测试密码，继续剩下 25 题并查看专属报告。</p>
+        <input id="pwd" type="password" placeholder="请输入测试密码" autocomplete="off" data-page-node-id="vGR7NAZbUpN4QXrceyVVuI" />
+        <button id="pwBtn" class="btn primary" data-page-node-id="20g1UT9Oc02HHRKByHRloE">解锁并继续</button>
+        <p id="pwMsg" class="msg" data-page-node-id="uFAG4jyDdOgjvMcHBvT408"></p>
+        <button id="pwBack" class="btn ghost" data-page-node-id="waDHQOtVMnP9ROUFyo3Jiz">返回上一题</button>
+      </div>
+    </section>
+
+    <!-- 结果 -->
+    <section id="result" class="screen hidden" data-page-node-id="hcSv6MaeriYvDrNDartwpT">
+      <div id="resultCard" class="result-card" data-page-node-id="n09LBijF4Bkj3yJEDFJ5uK"></div>
+      <div class="result-actions" data-page-node-id="YKwwWtjL3sO0wzFSrMAX0O">
+        <button id="saveBtn" class="btn primary" data-page-node-id="AMvp1Br65sruWy5MFeQddt">保存长图</button>
+        <button id="copyBtn" class="btn" data-page-node-id="uea2rDdDjOMVME8ud75PpR">分享给朋友</button>
+        <button id="againBtn" class="btn ghost" data-page-node-id="yifgGHf8YCZJvbzBdcoNTW">再测一次</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- 好评有礼弹窗 -->
+  <div id="modal" class="modal hidden" data-page-node-id="AfNFmEnieIkLGG2Hz37Z7C">
+    <div class="modal-box" data-page-node-id="F7b4jGYFrNugZ9tErGYRI2">
+      <h3 data-page-node-id="Ik1PiY1hqADuCpNw29nxnM">好评有礼</h3>
+      <p data-page-node-id="l7BEE0Xh9jII27op3a4LIG">感谢支持！在店铺完成 <strong data-page-node-id="CbxWFg08bOOYwKkAdqnj5F">好评</strong> 后，请添加客服微信并发送好评截图，即可领取 <strong data-page-node-id="qPVw3fahFWBmBjTBQc5IkF">1 元返现</strong>。</p>
+      <p class="cs" data-page-node-id="XDJAD2wcSd3IRvyqLFQVrw">客服微信：<span id="csWx" data-page-node-id="MFJ1ojJR0esDLc3hRlEfhv">请替换为你的客服微信</span></p>
+      <button id="modalClose" class="btn primary" data-page-node-id="T3VQEczL50lD80cI2GktEX">知道啦</button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden" data-page-node-id="ZduE6tGTu3CHGklvLfhECd"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="vendor/html2canvas.min.js?v=12"></script>
+  <script src="supabase-config.js?v=12"></script>
+  <script src="data.js?v=12"></script>
+  <script src="app.js?v=12"></script>
+</body>
+</html>
