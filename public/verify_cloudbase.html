@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CloudBase 后端连接自检 · 财富体质测试</title>
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f7f8fa; color: #222; margin: 0; padding: 18px; }
+    .wrap { max-width: 560px; margin: 0 auto; }
+    h1 { font-size: 19px; color: #1a73e8; }
+    .card { background: #fff; border-radius: 14px; padding: 16px; box-shadow: 0 6px 20px rgba(0,0,0,.06); margin-bottom: 14px; }
+    button { padding: 11px 14px; font-size: 14px; border: none; border-radius: 10px; background: linear-gradient(135deg,#4f8cff,#1a73e8); color:#fff; font-weight:600; cursor:pointer; margin: 6px 6px 0 0; }
+    button.ghost { background: #eef1f5; color: #555; }
+    #out { margin-top: 6px; }
+    .line { padding: 8px 10px; border-radius: 8px; font-size: 13.5px; margin-top: 8px; line-height: 1.5; white-space: pre-wrap; word-break: break-all; }
+    .ok { background: #e7f6ec; color: #137333; }
+    .warn { background: #fff4e5; color: #b06000; }
+    .err { background: #fde8e8; color: #c5221f; }
+    .info { background: #eef3ff; color: #1a56c4; }
+    .hint { font-size: 12.5px; color: #888; line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>🔌 CloudBase 后端连接自检</h1>
+    <div class="card">
+      <p class="hint">本页用于确认迁移到腾讯云 CloudBase 后：① 后端是否可达 ② 6 个函数是否建好 ③ 卡密校验是否实时成功。<br>请在 <b>tian-yu-520.github.io</b> 域名下打开本页（已部署到 GitHub Pages），否则会被 CloudBase 安全域名拦截。</p>
+      <button id="run">① 检测连通性 + 函数</button>
+      <button id="probe" class="ghost">② 实测消耗 abcd1234（扣 1 次）</button>
+      <div id="out"></div>
+    </div>
+    <div class="card">
+      <p class="hint"><b>若①全部变红/报错，优先检查 CloudBase 控制台两步配置：</b><br>1) 身份认证 → 登录方式 → 开启「匿名登录」<br>2) 环境配置 → 安全来源 → 安全域名 → 添加 <code>tian-yu-520.github.io</code><br>3) 确认已在 PostgreSQL 的 SQL 执行里跑过 <code>cloudbase-schema.sql</code></p>
+    </div>
+  </div>
+
+  <script src="https://static.cloudbase.net/cloudbase-js-sdk/latest/cloudbase.full.js?v=1"></script>
+  <script src="supabase-config.js?v=14"></script>
+  <script>
+    const $ = s => document.querySelector(s);
+    const out = $('#out');
+    function log(t, cls) {
+      const d = document.createElement('div');
+      d.className = 'line ' + (cls || 'info');
+      d.textContent = t;
+      out.appendChild(d);
+    }
+
+    async function getDb() {
+      const db = window.__getSb && window.__getSb();
+      if (!db) { log('❌ CloudBase SDK 未加载（CDN 失败？或 cloudbase 全局变量缺失）', 'err'); return null; }
+      return db;
+    }
+
+    $('#run').onclick = async () => {
+      out.innerHTML = '';
+      const db = await getDb(); if (!db) return;
+      log('① 初始化成功，开始调用 RPC…', 'info');
+      try {
+        // 函数存在性探测：无效码应返回 null 且无 error
+        const p = await db.rpc('consume_password', { p: '__probe_xyz__' });
+        if (p.error) log('② consume_password 调用返回 error：' + JSON.stringify(p.error), 'err');
+        else log('② consume_password 函数存在 ✅（探测无效码返回 data=' + JSON.stringify(p.data) + '，符合预期 null）', 'ok');
+      } catch (e) {
+        log('② consume_password 调用异常：' + e.message, 'err');
+      }
+      try {
+        const a = await db.rpc('admin_auth', { k: '@Liyu5201314' });
+        log('③ admin_auth(@Liyu5201314) -> ' + JSON.stringify(a.data) + (a.data ? ' ✅ 管理员密码已生效' : ' ⚠️ 管理员密码不匹配（需在 SQL 执行 update admin_secret）'), a.data ? 'ok' : 'warn');
+      } catch (e) {
+        log('③ admin_auth 调用异常：' + e.message, 'err');
+      }
+      try {
+        const l = await db.rpc('admin_list', { k: '@Liyu5201314' });
+        if (l.error) log('④ admin_list 返回 error：' + JSON.stringify(l.error), 'err');
+        else log('④ admin_list 返回 ' + (l.data ? l.data.length : 0) + ' 条卡密：' + JSON.stringify(l.data), 'ok');
+      } catch (e) {
+        log('④ admin_list 调用异常：' + e.message, 'err');
+      }
+    };
+
+    $('#probe').onclick = async () => {
+      const db = await getDb(); if (!db) return;
+      if (!confirm('将用 abcd1234 真实核销 1 次（剩余次数 -1），确认？')) return;
+      try {
+        const c = await db.rpc('consume_password', { p: 'abcd1234' });
+        log('实测 consume_password(abcd1234) -> data=' + JSON.stringify(c.data) + (c.data === null ? '（码无效或已用完）' : '（剩余次数，实时扣减成功 ✅）'), c.data !== null ? 'ok' : 'warn');
+      } catch (e) {
+        log('实测异常：' + e.message, 'err');
+      }
+    };
+  </script>
+</body>
+</html>
