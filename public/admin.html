@@ -56,11 +56,11 @@
       </table>
       <a class="back" href="/">← 返回测试首页</a>
     </div>
-    <p class="hint">管理员密码存在 Supabase 的 admin_secret 表中。如需修改，请到 Supabase 控制台 SQL Editor 执行：update public.admin_secret set admin_key = '新密码' where id = 1;</p>
+    <p class="hint">管理员密码存在 CloudBase 的 admin_secret 表中。如需修改，请到 CloudBase 控制台 PostgreSQL → SQL 执行：update public.admin_secret set admin_key = '新密码' where id = 1;</p>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase-config.js?v=13"></script>
+  <script src="https://static.cloudbase.net/cloudbase-js-sdk/latest/cloudbase.full.js?v=1"></script>
+  <script src="supabase-config.js?v=14"></script>
   <script>
     const $ = s => document.querySelector(s);
     let admin = '';
@@ -131,7 +131,7 @@
       b = document.createElement('div');
       b.id = 'offlineBanner';
       b.style.cssText = 'background:#fff3cd;color:#856404;padding:10px 12px;border-radius:10px;font-size:13px;margin-bottom:12px;line-height:1.5;';
-      b.textContent = '⚠️ 当前数据库不可达（可能未开启代理/VPN，或 supabase.co 直连被拦截）。已用本地密码进入后台；离线期间的增删改会暂存在本机，联网后点「同步到云端」即可上传。';
+      b.textContent = '⚠️ 当前数据库不可达（可能断网，或 CloudBase 匿名登录/安全域名未配置）。已用本地密码进入后台；离线期间的增删改会暂存在本机，联网后点「同步到云端」即可上传。';
       $('#panel').prepend(b);
     }
 
